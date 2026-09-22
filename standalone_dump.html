@@ -1,0 +1,2040 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Versi Standalone Dump - Buku Harian Lapangan PJLP</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SheetJS CDN untuk Ekspor Excel Client-Side Ringan -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Styling cetak resmi A4 Landscape */
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      @page {
+        size: A4 landscape;
+        margin: 10mm 10mm 12mm 10mm;
+      }
+      .page-break {
+        page-break-inside: avoid;
+      }
+    }
+    @media screen {
+      .print-only {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col font-sans">
+
+  <!-- ========================================================================= -->
+  <!-- TOP BAR & KONTROL MODE STANDALONE (NO-PRINT) -->
+  <!-- ========================================================================= -->
+  <header class="no-print bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand & Status Tag -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-white shadow-md">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-sm font-bold text-slate-900">Buku Harian PJLP</h1>
+            <span class="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+              DUMP / STANDALONE (No-Spreadsheet)
+            </span>
+          </div>
+          <p class="text-xs text-slate-500">Penyimpanan Lokal: Browser localStorage</p>
+        </div>
+      </div>
+
+      <!-- Quick Switcher & Tools -->
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        
+        <!-- Pemilih Cepat Petugas & Kecamatan Dinamis -->
+        <div class="hidden lg:flex items-center space-x-2 bg-slate-50 border border-slate-200 p-1.5 rounded-xl text-xs">
+          <span class="text-slate-400 font-semibold px-1">Kecamatan:</span>
+          <select id="quickSelectKecamatan" onchange="quickUpdateKecamatan(this.value)" class="bg-white border border-slate-200 rounded-lg px-2 py-1 font-bold text-emerald-800 text-xs focus:ring-1 focus:ring-emerald-500">
+            <option value="PULOGADUNG">Pulogadung</option>
+            <option value="JATINEGARA">Jatinegara</option>
+            <option value="MATRAMAN">Matraman</option>
+            <option value="DUREN SAWIT">Duren Sawit</option>
+            <option value="CAKUNG">Cakung</option>
+            <option value="KRAMAT JATI">Kramat Jati</option>
+            <option value="PASAR REBO">Pasar Rebo</option>
+            <option value="CIRACAS">Ciracas</option>
+            <option value="CIPAYUNG">Cipayung</option>
+            <option value="MAKASAR">Makasar</option>
+          </select>
+          <span class="text-slate-400 font-semibold px-1">Petugas:</span>
+          <input type="text" id="quickNamaPetugas" onchange="quickUpdatePetugas(this.value)" class="bg-white border border-slate-200 rounded-lg px-2 py-1 font-bold text-slate-800 text-xs w-36" value="BILLAH AKTAFI">
+        </div>
+
+        <!-- Tombol Beralih Mode Tampilan (Mobile vs Desktop) -->
+        <div class="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200 text-xs font-semibold space-x-1">
+          <button type="button" id="btnModeMobile" onclick="setViewMode('mobile')" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-800 transition">
+            📱 Form Mobile
+          </button>
+          <button type="button" id="btnModeDesktop" onclick="setViewMode('desktop')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white shadow-sm transition">
+            🖥️ Dashboard Desktop
+          </button>
+          <button type="button" onclick="copyDemoShareLink()" class="px-2.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition flex items-center gap-1 shadow-sm" title="Salin link demo ini untuk dikirim ke WhatsApp teman/admin">
+            <span>📋 Bagikan Link</span>
+          </button>
+          <a href="?" class="px-2.5 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition flex items-center gap-1" title="Kembali ke Web Utama">
+            <span>⬅️ Web Utama</span>
+          </a>
+        </div>
+
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- PANEL KONTROL DATA DUMP / MOCK GENERATOR (NO-PRINT) -->
+  <!-- ========================================================================= -->
+  <div class="no-print bg-slate-900 text-slate-200 py-2.5 px-4 text-xs border-b border-slate-800 shadow-inner">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      
+      <div class="flex items-center space-x-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="font-medium text-slate-300">Uji Coba Cepat Data Dump:</span>
+        <button type="button" onclick="seedOneMonthMockData()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1 rounded-lg transition shadow-sm flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+          <span>Isi Data Demo 1 Bulan (Auto-Fill)</span>
+        </button>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <button type="button" onclick="exportJsonDump()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1 rounded-lg border border-slate-700 transition">
+          📥 Export JSON Dump
+        </button>
+        <button type="button" onclick="document.getElementById('fileImportJson').click()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1 rounded-lg border border-slate-700 transition">
+          📤 Import JSON
+        </button>
+        <input type="file" id="fileImportJson" accept=".json" onchange="importJsonDump(this)" class="hidden">
+        <button type="button" onclick="resetLocalDatabase()" class="bg-red-900/60 hover:bg-red-800 text-red-200 px-3 py-1 rounded-lg border border-red-800 transition">
+          🗑️ Reset Data
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAMPILAN 1: MODE MOBILE FORM (NO-PRINT) -->
+  <!-- ========================================================================= -->
+  <div id="containerMobile" class="no-print w-full flex-1 flex flex-col items-center p-3 sm:p-6 pb-20 hidden">
+    <main class="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+      
+      <!-- Mobile Header -->
+      <header class="bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 text-white p-5 shadow-md">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/20">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold tracking-tight">Buku Harian PJLP</h2>
+              <p class="text-xs text-emerald-100 font-medium">Formulir Input Harian (Standalone)</p>
+            </div>
+          </div>
+          <span class="bg-amber-400 text-amber-950 font-black text-[10px] px-2 py-0.5 rounded">MOCK</span>
+        </div>
+        <div class="mt-3 pt-2.5 border-t border-white/15 flex items-center justify-between text-xs text-emerald-100">
+          <span id="mobLabelPetugas" class="font-semibold">Petugas: BILLAH AKTAFI</span>
+          <span id="mobLabelKecamatan" class="bg-white/20 px-2 py-0.5 rounded-full text-[11px] font-semibold">Kec. PULOGADUNG</span>
+        </div>
+      </header>
+
+      <!-- Mobile Form -->
+      <form id="formMobile" onsubmit="handleMobileSubmit(event)" class="p-5 space-y-4">
+        
+        <!-- Status Kehadiran / Kerja / Libur / Cuti -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label for="mobStatusKehadiran" class="block text-xs font-bold text-slate-700 uppercase">Status Kehadiran Hari Ini *</label>
+            <span id="mobCutiBadge" class="text-[10px] bg-cyan-100 text-cyan-800 font-bold px-2 py-0.5 rounded-full">Cuti: 0/12 Terpakai</span>
+          </div>
+          <select id="mobStatusKehadiran" onchange="handleMobStatusChange(this.value)" class="w-full bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold rounded-xl p-3">
+            <option value="kerja" selected>🟢 Masuk Kerja (Lengkap Dokumentasi Foto)</option>
+            <option value="libur">🟡 Hari Libur / Minggu (Bebas Foto)</option>
+            <option value="cuti_tahunan">🔵 Cuti Tahunan (Bebas Foto)</option>
+            <option value="cuti_melahirkan">🟣 Cuti Melahirkan / Bersalin (Bebas Foto)</option>
+            <option value="sakit">🔴 Izin Sakit (Bebas Foto)</option>
+            <option value="izin">⚪ Izin Alasan Penting (Bebas Foto)</option>
+          </select>
+          <input type="hidden" id="mobIsLibur" value="false">
+        </div>
+
+        <!-- Tanggal -->
+        <div>
+          <label for="mobTanggal" class="block text-xs font-bold text-slate-700 uppercase mb-1">Tanggal Kegiatan</label>
+          <input type="date" id="mobTanggal" required class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-3 font-medium">
+        </div>
+
+        <!-- Lokasi Kerja -->
+        <div>
+          <label for="mobLokasi" class="block text-xs font-bold text-slate-700 uppercase mb-1">Lokasi Kerja</label>
+          <input type="text" id="mobLokasi" placeholder="Misal: Taman Gabus, Jalur Hijau By Pass" required class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-3 font-medium">
+        </div>
+
+        <!-- Jenis Pekerjaan -->
+        <div>
+          <label for="mobJenis" class="block text-xs font-bold text-slate-700 uppercase mb-1">Jenis Pekerjaan</label>
+          <input type="text" id="mobJenis" placeholder="Misal: Penyiraman Tanaman" required class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-3 font-medium">
+          
+          <div class="flex flex-wrap gap-1.5 mt-2" id="mobQuickTasksGroup">
+            <button type="button" data-task="Penyiraman Tanaman" onclick="toggleMobTask(this, 'Penyiraman Tanaman')" class="btn-mob-task text-[10px] bg-slate-100 hover:bg-emerald-50 text-slate-600 px-2 py-1 rounded-md border border-slate-200 transition">+ Penyiraman</button>
+            <button type="button" data-task="Pemangkasan Pohon & Rumput" onclick="toggleMobTask(this, 'Pemangkasan Pohon & Rumput')" class="btn-mob-task text-[10px] bg-slate-100 hover:bg-emerald-50 text-slate-600 px-2 py-1 rounded-md border border-slate-200 transition">+ Pemangkasan</button>
+            <button type="button" data-task="Menanam Tanaman" onclick="toggleMobTask(this, 'Menanam Tanaman')" class="btn-mob-task text-[10px] bg-slate-100 hover:bg-emerald-50 text-slate-600 px-2 py-1 rounded-md border border-slate-200 transition">+ Menanam Tanaman</button>
+            <button type="button" data-task="Pembersihan Sampah" onclick="toggleMobTask(this, 'Pembersihan Sampah')" class="btn-mob-task text-[10px] bg-slate-100 hover:bg-emerald-50 text-slate-600 px-2 py-1 rounded-md border border-slate-200 transition">+ Pembersihan</button>
+          </div>
+        </div>
+
+        <!-- Upload 3 Foto -->
+        <div id="mobPhotoSection" class="pt-2 border-t border-slate-200 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700 uppercase">Dokumentasi Progres (150px)</span>
+            <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">Auto-Compress</span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2">
+            <!-- 0% -->
+            <div class="bg-slate-50 p-2 rounded-xl border border-slate-200 text-center flex flex-col items-center">
+              <span class="text-[11px] font-bold text-slate-700 mb-1">0%</span>
+              <div id="mobPrev0" class="w-full h-20 bg-white border border-dashed border-slate-300 rounded-lg flex items-center justify-center overflow-hidden mb-1.5 text-[9px] text-slate-400">Pilih Foto</div>
+              <input type="file" id="mobFile0" accept="image/*" onchange="processLocalImage(this, 'mobPrev0', 'mobBase64_0', 'mobSize_0')" class="hidden">
+              <button type="button" onclick="document.getElementById('mobFile0').click()" class="w-full text-[10px] py-1 bg-white border border-slate-300 rounded font-medium">Unggah</button>
+              <span id="mobSize_0" class="text-[9px] text-slate-400 mt-1">150px</span>
+              <input type="hidden" id="mobBase64_0">
+            </div>
+
+            <!-- 50% -->
+            <div class="bg-slate-50 p-2 rounded-xl border border-slate-200 text-center flex flex-col items-center">
+              <span class="text-[11px] font-bold text-slate-700 mb-1">50%</span>
+              <div id="mobPrev50" class="w-full h-20 bg-white border border-dashed border-slate-300 rounded-lg flex items-center justify-center overflow-hidden mb-1.5 text-[9px] text-slate-400">Pilih Foto</div>
+              <input type="file" id="mobFile50" accept="image/*" onchange="processLocalImage(this, 'mobPrev50', 'mobBase64_50', 'mobSize_50')" class="hidden">
+              <button type="button" onclick="document.getElementById('mobFile50').click()" class="w-full text-[10px] py-1 bg-white border border-slate-300 rounded font-medium">Unggah</button>
+              <span id="mobSize_50" class="text-[9px] text-slate-400 mt-1">150px</span>
+              <input type="hidden" id="mobBase64_50">
+            </div>
+
+            <!-- 100% -->
+            <div class="bg-slate-50 p-2 rounded-xl border border-slate-200 text-center flex flex-col items-center">
+              <span class="text-[11px] font-bold text-slate-700 mb-1">100%</span>
+              <div id="mobPrev100" class="w-full h-20 bg-white border border-dashed border-slate-300 rounded-lg flex items-center justify-center overflow-hidden mb-1.5 text-[9px] text-slate-400">Pilih Foto</div>
+              <input type="file" id="mobFile100" accept="image/*" onchange="processLocalImage(this, 'mobPrev100', 'mobBase64_100', 'mobSize_100')" class="hidden">
+              <button type="button" onclick="document.getElementById('mobFile100').click()" class="w-full text-[10px] py-1 bg-white border border-slate-300 rounded font-medium">Unggah</button>
+              <span id="mobSize_100" class="text-[9px] text-slate-400 mt-1">150px</span>
+              <input type="hidden" id="mobBase64_100">
+            </div>
+          </div>
+        </div>
+
+        <!-- Keterangan -->
+        <div>
+          <label for="mobKet" class="block text-xs font-bold text-slate-700 uppercase mb-1">Keterangan</label>
+          <input type="text" id="mobKet" value="Selesai" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-3 font-medium">
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-md transition flex items-center justify-center space-x-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          <span>Simpan ke Database Lokal</span>
+        </button>
+      </form>
+
+    </main>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAMPILAN 2: MODE DESKTOP DASHBOARD (NO-PRINT) -->
+  <!-- ========================================================================= -->
+  <div id="containerDesktop" class="no-print max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col md:flex-row gap-6">
+    
+    <!-- Sidebar -->
+    <aside class="w-full md:w-64 flex-shrink-0">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sticky top-24 space-y-6">
+        
+        <!-- Active Profile Card -->
+        <div class="p-3.5 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl">
+          <p class="text-[10px] uppercase tracking-wider text-emerald-700 font-bold">Identitas Operasional</p>
+          <p id="deskNamaDisplay" class="text-sm font-bold text-slate-800 mt-0.5">BILLAH AKTAFI</p>
+          <p id="deskKecDisplay" class="text-xs text-slate-500">Kecamatan PULOGADUNG</p>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="space-y-1 text-xs font-semibold">
+          <button type="button" onclick="switchDeskSubTab('summary')" id="tabBtn-summary" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl bg-emerald-600 text-white shadow-sm transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+            <span>Ringkasan & Metrik</span>
+          </button>
+
+          <button type="button" onclick="switchDeskSubTab('table')" id="tabBtn-table" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <span>Tabel Log Data</span>
+          </button>
+
+          <button type="button" onclick="switchDeskSubTab('input')" id="tabBtn-input" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span>Input Harian Baru</span>
+          </button>
+
+          <button type="button" onclick="switchDeskSubTab('settings')" id="tabBtn-settings" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            <span>Pengaturan Identitas / Kop</span>
+          </button>
+        </nav>
+
+        <!-- Filter Periode -->
+        <div class="pt-4 border-t border-slate-100">
+          <p class="text-[10px] uppercase font-bold text-slate-400 mb-2">Periode Laporan</p>
+          <div class="space-y-2 text-xs">
+            <select id="deskFilterBulan" onchange="renderAll()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium">
+              <option value="1">Januari</option>
+              <option value="2">Februari</option>
+              <option value="3">Maret</option>
+              <option value="4">April</option>
+              <option value="5">Mei</option>
+              <option value="6">Juni</option>
+              <option value="7">Juli</option>
+              <option value="8">Agustus</option>
+              <option value="9">September</option>
+              <option value="10">Oktober</option>
+              <option value="11">November</option>
+              <option value="12">Desember</option>
+            </select>
+            <select id="deskFilterTahun" onchange="renderAll()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium">
+              <option value="2025">2025</option>
+              <option value="2026" selected>2026</option>
+              <option value="2027">2027</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tombol Cetak PDF Browser Langsung -->
+        <div class="pt-2">
+          <button type="button" onclick="triggerBrowserPrint()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/20 transition flex items-center justify-center space-x-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            <span>Cetak / Save as PDF</span>
+          </button>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 space-y-6">
+
+      <!-- SUB-TAB 1: RINGKASAN METRIK -->
+      <section id="deskSub-summary" class="space-y-6">
+        
+        <!-- Banner Standalone -->
+        <div class="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold">Portal Simulasi Laporan PJLP</h2>
+            <p class="text-xs text-emerald-100 mt-1 max-w-xl">
+              Mode Standalone / Dump tanpa koneksi spreadsheet. Anda dapat mengubah nama petugas atau kecamatan secara dinamis, memasukkan data harian, dan mencetak dokumen resmi A4 Landscape langsung ke PDF.
+            </p>
+          </div>
+          <div class="flex items-center space-x-3 flex-wrap gap-2.5">
+            <button type="button" onclick="switchDeskSubTab('input')" class="inline-flex items-center justify-center space-x-2 h-10 w-44 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 font-bold text-xs border border-white/30 shadow-md transition whitespace-nowrap active:scale-95">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+              <span>Input Laporan Baru</span>
+            </button>
+            <button type="button" onclick="triggerBrowserPrint()" class="inline-flex items-center justify-center space-x-2 h-10 w-44 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs border border-white/30 shadow-md transition whitespace-nowrap active:scale-95">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+              <span>Cetak PDF Laporan</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 5 Stat Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold uppercase text-slate-400">Hari Kerja Aktif</p>
+              <h3 id="statKerja" class="text-2xl font-black text-slate-800">0</h3>
+              <p class="text-[10px] text-slate-500">Laporan terisi</p>
+            </div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold uppercase text-slate-400">Dokumentasi Lengkap</p>
+              <h3 id="statFotoLengkap" class="text-2xl font-black text-slate-800">0</h3>
+              <p class="text-[10px] text-slate-500">Foto 0%, 50%, 100%</p>
+            </div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold uppercase text-slate-400">Libur / Cuti / Izin</p>
+              <h3 id="statLibur" class="text-2xl font-black text-slate-800">0</h3>
+              <p class="text-[10px] text-slate-500">Bebas dokumentasi</p>
+            </div>
+          </div>
+
+          <!-- Metrik 4: Kuota Cuti Tahunan -->
+          <div class="bg-white p-5 rounded-2xl border border-cyan-200 shadow-sm flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-xl bg-cyan-50 text-cyan-700 flex items-center justify-center font-bold">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold uppercase text-cyan-800">Cuti Tahunan</p>
+              <h3 id="statCutiTahunan" class="text-2xl font-black text-cyan-900">0 <span class="text-xs font-semibold text-slate-400">/ 12 Hari</span></h3>
+              <p id="statCutiSub" class="text-[10px] text-cyan-700 font-medium">Sisa: 12 hari</p>
+            </div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold uppercase text-slate-400">Kelengkapan Berkas</p>
+              <h3 id="statPersen" class="text-2xl font-black text-slate-800">100%</h3>
+              <p class="text-[10px] text-slate-500">Siap diekspor</p>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- SUB-TAB 2: TABEL DATA HARIAN -->
+      <section id="deskSub-table" class="space-y-4 hidden">
+        
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800">Tabel Rekapitulasi Laporan Harian</h3>
+            <p class="text-xs text-slate-500" id="tablePeriodLabel">Periode: Memuat data...</p>
+          </div>
+
+          <div class="flex items-center space-x-2 flex-wrap gap-1">
+            <div class="relative w-full sm:w-56">
+              <input type="text" id="filterSearch" onkeyup="filterTableSearch()" placeholder="Cari lokasi / tugas..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 font-medium">
+              <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+
+            <!-- Tombol Ekspor Excel (.xlsx) -->
+            <button type="button" onclick="exportDumpToExcel()" class="inline-flex items-center space-x-1 px-2.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition shadow-sm" title="Download Format Excel">
+              <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+              <span>Excel</span>
+            </button>
+
+            <!-- Tombol Ekspor Word (.doc) -->
+            <button type="button" onclick="exportDumpToWord()" class="inline-flex items-center space-x-1 px-2.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition shadow-sm" title="Download Format Word">
+              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+              <span>Word</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
+                  <th class="p-3 text-center w-12">No</th>
+                  <th class="p-3 w-32">Tanggal</th>
+                  <th class="p-3 w-48">Lokasi Kerja</th>
+                  <th class="p-3 w-48">Jenis Pekerjaan</th>
+                  <th class="p-3 text-center w-24">Foto 0%</th>
+                  <th class="p-3 text-center w-24">Foto 50%</th>
+                  <th class="p-3 text-center w-24">Foto 100%</th>
+                  <th class="p-3 w-28 text-center">Status</th>
+                  <th class="p-3 w-16 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="deskTableBody" class="divide-y divide-slate-100">
+                <!-- Diisi via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- SUB-TAB 3: INPUT HARIAN BARU (DESKTOP MODE DENGAN FOTO 0%, 50%, 100%) -->
+      <section id="deskSub-input" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 hidden">
+        <div>
+          <h3 class="text-base font-bold text-slate-800">Formulir Input Laporan Harian (Desktop Mode)</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Input kegiatan operasional dan unggah foto dokumentasi progres 0%, 50%, 100% (Otomatis kompresi 150px).</p>
+        </div>
+
+        <form id="deskFormInput" onsubmit="handleDesktopSubmit(event)" class="space-y-6">
+          
+          <!-- Baris 1: Toggle Libur & Tanggal -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex flex-col justify-center">
+              <div class="flex items-center justify-between mb-1">
+                <label for="deskStatusKehadiran" class="block text-[11px] font-bold text-emerald-900 uppercase tracking-wider">Status Kehadiran Hari Ini <span class="text-red-500">*</span></label>
+                <span id="deskCutiBadge" class="text-[10px] bg-cyan-100 text-cyan-800 font-bold px-2 py-0.5 rounded-full">Cuti: 0/12 Terpakai</span>
+              </div>
+              <select id="deskStatusKehadiran" onchange="handleDeskStatusChange(this.value)" class="w-full text-xs font-bold text-emerald-800 bg-white border border-emerald-300 rounded-lg p-2 focus:ring-1 focus:ring-emerald-500">
+                <option value="kerja" selected>🟢 Masuk Kerja (Lengkap 3 Foto Progres)</option>
+                <option value="libur">🟡 Hari Libur / Minggu (Bebas Dokumentasi)</option>
+                <option value="cuti_tahunan">🔵 Cuti Tahunan (Bebas Dokumentasi)</option>
+                <option value="cuti_melahirkan">🟣 Cuti Melahirkan / Bersalin (Bebas Dokumentasi)</option>
+                <option value="sakit">🔴 Izin Sakit (Bebas Dokumentasi)</option>
+                <option value="izin">⚪ Izin Alasan Penting (Bebas Dokumentasi)</option>
+              </select>
+              <input type="hidden" id="deskIsLibur" value="false">
+            </div>
+
+            <div>
+              <label for="deskTanggal" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tanggal Kegiatan <span class="text-red-500">*</span></label>
+              <input type="date" id="deskTanggal" required class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 font-medium focus:ring-1 focus:ring-emerald-500">
+            </div>
+
+          </div>
+
+          <!-- Baris 2: Lokasi & Jenis Pekerjaan -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="deskLokasi" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Lokasi Kerja <span class="text-red-500">*</span></label>
+              <input type="text" id="deskLokasi" placeholder="Misal: LRT Kayu Putih, Taman Gabus" required class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 font-medium focus:ring-1 focus:ring-emerald-500">
+            </div>
+
+            <div>
+              <label for="deskJenis" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Jenis Pekerjaan <span class="text-red-500">*</span></label>
+              <input type="text" id="deskJenis" placeholder="Misal: Penyiraman / Pemangkasan" required class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 font-medium focus:ring-1 focus:ring-emerald-500">
+              
+              <div class="flex flex-wrap gap-1.5 mt-2" id="deskQuickTasksGroup">
+                <button type="button" data-task="Penyiraman Tanaman" onclick="toggleDeskTask(this, 'Penyiraman Tanaman')" class="btn-desk-task text-[10px] bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-2.5 py-1 rounded-md border border-slate-200 transition">+ Penyiraman</button>
+                <button type="button" data-task="Pemangkasan Pohon & Rumput" onclick="toggleDeskTask(this, 'Pemangkasan Pohon & Rumput')" class="btn-desk-task text-[10px] bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-2.5 py-1 rounded-md border border-slate-200 transition">+ Pemangkasan</button>
+                <button type="button" data-task="Menanam Tanaman" onclick="toggleDeskTask(this, 'Menanam Tanaman')" class="btn-desk-task text-[10px] bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-2.5 py-1 rounded-md border border-slate-200 transition">+ Menanam Tanaman</button>
+                <button type="button" data-task="Pembersihan Sampah & Saluran" onclick="toggleDeskTask(this, 'Pembersihan Sampah & Saluran')" class="btn-desk-task text-[10px] bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-2.5 py-1 rounded-md border border-slate-200 transition">+ Pembersihan</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Baris 3: Slot Upload 3 Foto Progres (0%, 50%, 100%) -->
+          <div id="deskPhotoSection" class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Dokumentasi Progres Pekerjaan (0%, 50%, 100%)</h4>
+              <span class="text-[10px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full">Auto-Compress 150px</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <!-- Slot 0% -->
+              <div class="bg-white p-3 rounded-xl border border-slate-200 text-center flex flex-col items-center">
+                <span class="text-xs font-bold text-slate-700 mb-1">0% (Mulai)</span>
+                <div id="deskPrev0" class="w-full h-32 bg-slate-50 border border-dashed border-slate-300 rounded-lg flex items-center justify-center overflow-hidden mb-2">
+                  <span class="text-[11px] text-slate-400">Pilih Foto 0%</span>
+                </div>
+                <input type="file" id="deskFile0" accept="image/*" onchange="processLocalImage(this, 'deskPrev0', 'deskBase64_0', 'deskSize_0')" class="hidden">
+                <button type="button" onclick="document.getElementById('deskFile0').click()" class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-slate-300 hover:bg-slate-50 shadow-sm transition">Pilih Berkas</button>
+                <span id="deskSize_0" class="text-[10px] text-slate-400 mt-1">Maks 150px</span>
+                <input type="hidden" id="deskBase64_0">
+              </div>
+
+              <!-- Slot 50% -->
+              <div class="bg-white p-3 rounded-xl border border-slate-200 text-center flex flex-col items-center">
+                <span class="text-xs font-bold text-slate-700 mb-1">50% (Proses)</span>
+                <div id="deskPrev50" class="w-full h-32 bg-slate-50 border border-dashed border-slate-300 rounded-lg flex items-center justify-center overflow-hidden mb-2">
+                  <span class="text-[11px] text-slate-400">Pilih Foto 50%</span>
+                </div>
+                <input type="file" id="deskFile50" accept="image/*" onchange="processLocalImage(this, 'deskPrev50', 'deskBase64_50', 'deskSize_50')" class="hidden">
+                <button type="button" onclick="document.getElementById('deskFile50').click()" class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-slate-300 hover:bg-slate-50 shadow-sm transition">Pilih Berkas</button>
+                <span id="deskSize_50" class="text-[10px] text-slate-400 mt-1">Maks 150px</span>
+                <input type="hidden" id="deskBase64_50">
+              </div>
+
+              <!-- Slot 100% -->
+              <div class="bg-white p-3 rounded-xl border border-slate-200 text-center flex flex-col items-center">
+                <span class="text-xs font-bold text-slate-700 mb-1">100% (Selesai)</span>
+                <div id="deskPrev100" class="w-full h-32 bg-slate-50 border border-dashed border-slate-300 rounded-lg flex items-center justify-center overflow-hidden mb-2">
+                  <span class="text-[11px] text-slate-400">Pilih Foto 100%</span>
+                </div>
+                <input type="file" id="deskFile100" accept="image/*" onchange="processLocalImage(this, 'deskPrev100', 'deskBase64_100', 'deskSize_100')" class="hidden">
+                <button type="button" onclick="document.getElementById('deskFile100').click()" class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-slate-300 hover:bg-slate-50 shadow-sm transition">Pilih Berkas</button>
+                <span id="deskSize_100" class="text-[10px] text-slate-400 mt-1">Maks 150px</span>
+                <input type="hidden" id="deskBase64_100">
+              </div>
+            </div>
+          </div>
+
+          <!-- Keterangan & Submit -->
+          <div>
+            <label for="deskKet" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Keterangan Tambahan</label>
+            <input type="text" id="deskKet" value="Selesai" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 font-medium focus:ring-1 focus:ring-emerald-500">
+          </div>
+
+          <div class="flex justify-end space-x-3 pt-2">
+            <button type="reset" onclick="resetDeskInputForm()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition">Reset</button>
+            <button type="submit" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition flex items-center space-x-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              <span>Simpan ke Database Lokal</span>
+            </button>
+          </div>
+
+        </form>
+      </section>
+
+      <!-- SUB-TAB 4: PENGATURAN IDENTITAS / KOP SURAT DINAMIS -->
+      <section id="deskSub-settings" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 hidden">
+        <div>
+          <h3 class="text-base font-bold text-slate-800">Pengaturan Identitas Kedinasan (Multi-Kecamatan & Petugas)</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Ubah nama petugas, kecamatan, atau rincian program agar dapat digunakan oleh tim lain.</p>
+        </div>
+
+        <form id="settingsForm" onsubmit="handleSaveSettings(event)" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <div class="md:col-span-2">
+              <label for="cfgJudul" class="block text-xs font-bold text-slate-700 uppercase mb-1">Judul Laporan</label>
+              <input type="text" id="cfgJudul" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 font-medium">
+            </div>
+
+            <div>
+              <label for="cfgWilayah" class="block text-xs font-bold text-slate-700 uppercase mb-1">Wilayah Dinas</label>
+              <input type="text" id="cfgWilayah" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 font-medium">
+            </div>
+
+            <div>
+              <label for="cfgKecamatan" class="block text-xs font-bold text-slate-700 uppercase mb-1">Kecamatan</label>
+              <input type="text" id="cfgKecamatan" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 font-medium" placeholder="Contoh: PULOGADUNG, JATINEGARA, dll.">
+            </div>
+
+            <div>
+              <label for="cfgNamaPetugas" class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Petugas PJLP</label>
+              <input type="text" id="cfgNamaPetugas" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 font-medium" placeholder="Nama Petugas">
+            </div>
+
+            <div>
+              <label for="cfgNamaPengawas" class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama / NIP Pengawas Lapangan</label>
+              <input type="text" id="cfgNamaPengawas" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 font-medium">
+            </div>
+
+            <div>
+              <label for="cfgUrusan" class="block text-xs font-bold text-slate-700 uppercase mb-1">Urusan</label>
+              <input type="text" id="cfgUrusan" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 font-medium">
+            </div>
+
+            <div>
+              <label for="cfgProgram" class="block text-xs font-bold text-slate-700 uppercase mb-1">Program</label>
+              <input type="text" id="cfgProgram" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 font-medium">
+            </div>
+
+            <div>
+              <label for="cfgKegiatan" class="block text-xs font-bold text-slate-700 uppercase mb-1">Kegiatan</label>
+              <input type="text" id="cfgKegiatan" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 font-medium">
+            </div>
+
+            <div>
+              <label for="cfgSubKegiatan" class="block text-xs font-bold text-slate-700 uppercase mb-1">Sub Kegiatan</label>
+              <input type="text" id="cfgSubKegiatan" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 font-medium">
+            </div>
+
+            <div>
+              <label for="cfgRincianSub" class="block text-xs font-bold text-slate-700 uppercase mb-1">Rincian Sub</label>
+              <input type="text" id="cfgRincianSub" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 font-medium">
+            </div>
+
+            <div>
+              <label for="cfgKodeRekening" class="block text-xs font-bold text-slate-700 uppercase mb-1">Kode Rekening</label>
+              <input type="text" id="cfgKodeRekening" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 font-medium">
+            </div>
+
+          </div>
+
+          <div class="flex justify-end pt-4 border-t border-slate-100">
+            <button type="submit" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition">
+              Simpan Identitas Kop
+            </button>
+          </div>
+        </form>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL LIGHTBOX FOTO (NO-PRINT) -->
+  <!-- ========================================================================= -->
+  <div id="modalLightbox" class="no-print fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" onclick="closeLightbox()">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-4 shadow-2xl relative" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h4 id="lightboxTitle" class="text-xs font-bold text-slate-800">Pratinjau Foto Dokumentasi (150px)</h4>
+        <button type="button" onclick="closeLightbox()" class="text-slate-400 hover:text-slate-600 p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div class="py-4 flex items-center justify-center bg-slate-50 rounded-xl mt-3 overflow-hidden min-h-[250px]">
+        <img id="lightboxImg" src="" alt="Pratinjau Foto" class="max-h-[70vh] max-w-full object-contain rounded-lg shadow-sm">
+      </div>
+      <div class="pt-3 flex justify-between items-center text-[11px] text-slate-500">
+        <span id="lightboxCaption">Dokumentasi</span>
+        <span class="text-emerald-700 font-semibold">Tersimpan di LocalStorage</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- DOKUMEN CETAK RESMI A4 LANDSCAPE (PRINT-ONLY) -->
+  <!-- ========================================================================= -->
+  <div id="printArea" class="print-only">
+    
+    <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #1e293b; line-height: 1.3;">
+      
+      <!-- Judul Laporan Kedinasan -->
+      <div id="printJudulLaporan" style="text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">
+        BUKU HARIAN LAPANGAN PJLP PENGEMUDI TANGKI TAMAN
+      </div>
+
+      <!-- Tabel Metadata KOP -->
+      <table style="width: 100%; margin-bottom: 10px; border-collapse: collapse; font-size: 9.5px;">
+        <tr>
+          <td style="width: 18%; font-weight: 600; padding: 2px 4px;">Wilayah</td>
+          <td style="width: 2%; text-align: center; padding: 2px 4px;">:</td>
+          <td id="printWilayah" style="width: 80%; padding: 2px 4px;">-</td>
+        </tr>
+        <tr>
+          <td style="width: 18%; font-weight: 600; padding: 2px 4px;">Kecamatan</td>
+          <td style="width: 2%; text-align: center; padding: 2px 4px;">:</td>
+          <td id="printKecamatan" style="width: 80%; padding: 2px 4px;">-</td>
+        </tr>
+        <tr>
+          <td style="width: 18%; font-weight: 600; padding: 2px 4px;">Nama Petugas</td>
+          <td style="width: 2%; text-align: center; padding: 2px 4px;">:</td>
+          <td id="printPetugas" style="width: 80%; font-weight: bold; padding: 2px 4px;">-</td>
+        </tr>
+        <tr>
+          <td style="width: 18%; font-weight: 600; padding: 2px 4px;">Urusan</td>
+          <td style="width: 2%; text-align: center; padding: 2px 4px;">:</td>
+          <td id="printUrusan" style="width: 80%; padding: 2px 4px;">-</td>
+        </tr>
+        <tr>
+          <td style="width: 18%; font-weight: 600; padding: 2px 4px;">Program</td>
+          <td style="width: 2%; text-align: center; padding: 2px 4px;">:</td>
+          <td id="printProgram" style="width: 80%; padding: 2px 4px;">-</td>
+        </tr>
+        <tr>
+          <td style="width: 18%; font-weight: 600; padding: 2px 4px;">Kegiatan / Sub Kegiatan</td>
+          <td style="width: 2%; text-align: center; padding: 2px 4px;">:</td>
+          <td id="printKegiatan" style="width: 80%; padding: 2px 4px;">-</td>
+        </tr>
+        <tr>
+          <td style="width: 18%; font-weight: 600; padding: 2px 4px;">Rincian Sub / Rekening</td>
+          <td style="width: 2%; text-align: center; padding: 2px 4px;">:</td>
+          <td id="printRekening" style="width: 80%; padding: 2px 4px;">-</td>
+        </tr>
+        <tr>
+          <td style="width: 18%; font-weight: 600; padding: 2px 4px;">Bulan & Tahun</td>
+          <td style="width: 2%; text-align: center; padding: 2px 4px;">:</td>
+          <td id="printBulanTahun" style="width: 80%; font-weight: bold; padding: 2px 4px;">-</td>
+        </tr>
+      </table>
+
+      <!-- Tabel Kompilasi Harian Resmi -->
+      <table style="width: 100%; border-collapse: collapse; margin-top: 6px;">
+        <thead>
+          <tr>
+            <th rowspan="2" style="border: 1px solid #64748b; background-color: #f1f5f9; padding: 5px 4px; text-align: center; width: 4%;">NO</th>
+            <th rowspan="2" style="border: 1px solid #64748b; background-color: #f1f5f9; padding: 5px 4px; text-align: center; width: 11%;">HARI / TANGGAL</th>
+            <th rowspan="2" style="border: 1px solid #64748b; background-color: #f1f5f9; padding: 5px 4px; text-align: center; width: 15%;">LOKASI</th>
+            <th rowspan="2" style="border: 1px solid #64748b; background-color: #f1f5f9; padding: 5px 4px; text-align: center; width: 18%;">JENIS PEKERJAAN</th>
+            <th colspan="3" style="border: 1px solid #64748b; background-color: #f1f5f9; padding: 5px 4px; text-align: center; width: 42%;">DOKUMENTASI FOTO PEKERJAAN</th>
+            <th rowspan="2" style="border: 1px solid #64748b; background-color: #f1f5f9; padding: 5px 4px; text-align: center; width: 10%;">KETERANGAN</th>
+          </tr>
+          <tr>
+            <th style="border: 1px solid #64748b; background-color: #f1f5f9; padding: 4px; text-align: center; width: 14%;">0%</th>
+            <th style="border: 1px solid #64748b; background-color: #f1f5f9; padding: 4px; text-align: center; width: 14%;">50%</th>
+            <th style="border: 1px solid #64748b; background-color: #f1f5f9; padding: 4px; text-align: center; width: 14%;">100%</th>
+          </tr>
+        </thead>
+        <tbody id="printTableBody">
+          <!-- Diisi via JS saat sebelum print -->
+        </tbody>
+      </table>
+
+      <!-- Lembar Tanda Tangan Pengesahan -->
+      <table style="margin-top: 25px; width: 100%; border-collapse: collapse; page-break-inside: avoid;">
+        <tr>
+          <td style="width: 50%; text-align: center; vertical-align: top; font-size: 10px;">
+            Mengetahui,<br>
+            Pengawas Lapangan / Kasatpel
+            <div style="height: 55px;"></div>
+            <div id="printSignPengawasContainer">
+              <strong id="printSignPengawas">( .................................................... )</strong><br>
+              <span id="printNipPengawas">NIP. ...................................................</span>
+            </div>
+          </td>
+          <td style="width: 50%; text-align: center; vertical-align: top; font-size: 10px;">
+            Jakarta, <span id="printTanggalTtd">-</span><br>
+            Petugas PJLP
+            <div style="height: 55px;"></div>
+            <strong id="printSignPetugas"><u>BILLAH AKTAFI</u></strong><br>
+            PJLP Pengemudi Tangki Taman
+          </td>
+        </tr>
+      </table>
+
+    </div>
+
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT STANDALONE DATABASE ENGINE & CONTROLLER -->
+  <!-- ========================================================================= -->
+  <script>
+    const STORAGE_KEY_CONFIG = 'PJLP_STANDALONE_CONFIG';
+    const STORAGE_KEY_DATA = 'PJLP_STANDALONE_DATA';
+
+    // Default Konfigurasi Awal
+    const DEFAULT_CONFIG = {
+      Judul_Laporan: 'BUKU HARIAN LAPANGAN PJLP PENGEMUDI TANGKI TAMAN',
+      Wilayah: 'Suku Dinas Pertamanan dan Hutan Kota Kota Administrasi Jakarta Timur',
+      Kecamatan: 'PULOGADUNG',
+      Nama_Petugas: 'BILLAH AKTAFI',
+      Nama_Pengawas: 'NIP. / Nama Pengawas Lapangan',
+      Urusan: '2.11 / Urusan Pemerintahan Bidang Lingkungan Hidup',
+      Program: '3.28.03 / Program Pengelolaan Hutan',
+      Kegiatan: '3.28.03.1.04 / Pelaksanaan Rehabilitasi Di Luar Kawasan Hutan Negara',
+      Sub_Kegiatan: '3.28.03.1.04.0003 Pembangunan Hutan Kota Luar Kawasan Hutan Negara',
+      Rincian_Sub: 'Penyediaan Jasa Petugas Supir',
+      Kode_Rekening: '2.11.04.1.01.0016 / Belanja Jasa Tenaga Penanganan Prasarana dan Sarana Umum'
+    };
+
+    // Load State Saat Pertama Kali
+    document.addEventListener('DOMContentLoaded', () => {
+      initDatabase();
+      
+      const now = new Date();
+      const currentMonth = now.getMonth() + 1;
+      document.getElementById('deskFilterBulan').value = currentMonth;
+
+      const todayStr = now.toISOString().split('T')[0];
+      const mobTgl = document.getElementById('mobTanggal');
+      if (mobTgl) {
+        mobTgl.value = todayStr;
+        if (now.getDay() === 0) {
+          toggleMobLibur(true);
+        }
+      }
+
+      const deskTgl = document.getElementById('deskTanggal');
+      if (deskTgl) {
+        deskTgl.value = todayStr;
+        if (now.getDay() === 0) {
+          toggleDeskLibur(true);
+        }
+      }
+
+      renderAll();
+
+      // Deteksi otomatis jika dibuka di layar ponsel
+      if (window.innerWidth < 768) {
+        setViewMode('mobile');
+      } else {
+        setViewMode('desktop');
+      }
+
+      const mobJ = document.getElementById('mobJenis');
+      if (mobJ) mobJ.addEventListener('input', syncMobTaskButtons);
+
+      const deskJ = document.getElementById('deskJenis');
+      if (deskJ) deskJ.addEventListener('input', syncDeskTaskButtons);
+    });
+
+    // Inisialisasi Database Lokal
+    function initDatabase() {
+      if (!localStorage.getItem(STORAGE_KEY_CONFIG)) {
+        localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(DEFAULT_CONFIG));
+      }
+      if (!localStorage.getItem(STORAGE_KEY_DATA)) {
+        localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify([]));
+      }
+    }
+
+    function getConfig() {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY_CONFIG) || JSON.stringify(DEFAULT_CONFIG));
+    }
+
+    function saveConfig(cfg) {
+      localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(cfg));
+    }
+
+    function getDailyRecords() {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY_DATA) || '[]');
+    }
+
+    function saveDailyRecords(records) {
+      localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(records));
+    }
+
+    // Switch View Mode (Mobile vs Desktop)
+    function setViewMode(mode) {
+      const mob = document.getElementById('containerMobile');
+      const desk = document.getElementById('containerDesktop');
+      const btnMob = document.getElementById('btnModeMobile');
+      const btnDesk = document.getElementById('btnModeDesktop');
+
+      if (mode === 'mobile') {
+        mob.classList.remove('hidden');
+        desk.classList.add('hidden');
+        btnMob.className = 'px-3 py-1.5 rounded-lg bg-emerald-600 text-white shadow-sm transition';
+        btnDesk.className = 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-800 transition';
+      } else {
+        desk.classList.remove('hidden');
+        mob.classList.add('hidden');
+        btnDesk.className = 'px-3 py-1.5 rounded-lg bg-emerald-600 text-white shadow-sm transition';
+        btnMob.className = 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-800 transition';
+      }
+    // Salin Tautan Demo untuk Dibagikan ke Teman / Admin
+    function copyDemoShareLink() {
+      let url = window.location.href;
+      if (!url.includes('page=dump')) {
+        const sep = url.includes('?') ? '&' : '?';
+        url = url.split('#')[0] + sep + 'page=dump';
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => {
+          alert('✅ Tautan Demo/Dump berhasil disalin ke clipboard!\n\nKirimkan tautan ini ke teman atau admin Anda:\n' + url);
+        }).catch(() => {
+          prompt('Salin tautan demo ini untuk dibagikan ke teman/admin:', url);
+        });
+      } else {
+        prompt('Salin tautan demo ini untuk dibagikan ke teman/admin:', url);
+      }
+    }
+
+    // Switch Desktop Sub-Tabs
+    function switchDeskSubTab(sub) {
+      const subs = ['summary', 'table', 'input', 'settings'];
+      subs.forEach(s => {
+        const view = document.getElementById(`deskSub-${s}`);
+        const btn = document.getElementById(`tabBtn-${s}`);
+        if (s === sub) {
+          view.classList.remove('hidden');
+          btn.className = 'w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl bg-emerald-600 text-white shadow-sm transition';
+        } else {
+          view.classList.add('hidden');
+          btn.className = 'w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition';
+        }
+      });
+    }
+
+    // Quick Update Kecamatan & Petugas
+    function quickUpdateKecamatan(kec) {
+      const cfg = getConfig();
+      cfg.Kecamatan = kec;
+      saveConfig(cfg);
+      renderAll();
+    }
+
+    function quickUpdatePetugas(petugas) {
+      const cfg = getConfig();
+      cfg.Nama_Petugas = petugas.trim().toUpperCase();
+      saveConfig(cfg);
+      renderAll();
+    }
+
+    // Render Semua Komponen Tampilan
+    function renderAll() {
+      const cfg = getConfig();
+      const records = getDailyRecords();
+
+      // Update Label Header
+      document.getElementById('quickSelectKecamatan').value = cfg.Kecamatan || 'PULOGADUNG';
+      document.getElementById('quickNamaPetugas').value = cfg.Nama_Petugas || 'BILLAH AKTAFI';
+      document.getElementById('mobLabelPetugas').textContent = `Petugas: ${cfg.Nama_Petugas}`;
+      document.getElementById('mobLabelKecamatan').textContent = `Kec. ${cfg.Kecamatan}`;
+      document.getElementById('deskNamaDisplay').textContent = cfg.Nama_Petugas;
+      document.getElementById('deskKecDisplay').textContent = `Kecamatan ${cfg.Kecamatan}`;
+
+      // Populate Settings Form
+      document.getElementById('cfgJudul').value = cfg.Judul_Laporan || '';
+      document.getElementById('cfgWilayah').value = cfg.Wilayah || '';
+      document.getElementById('cfgKecamatan').value = cfg.Kecamatan || '';
+      document.getElementById('cfgNamaPetugas').value = cfg.Nama_Petugas || '';
+      document.getElementById('cfgNamaPengawas').value = cfg.Nama_Pengawas || '';
+      document.getElementById('cfgUrusan').value = cfg.Urusan || '';
+      document.getElementById('cfgProgram').value = cfg.Program || '';
+      document.getElementById('cfgKegiatan').value = cfg.Kegiatan || '';
+      document.getElementById('cfgSubKegiatan').value = cfg.Sub_Kegiatan || '';
+      document.getElementById('cfgRincianSub').value = cfg.Rincian_Sub || '';
+      document.getElementById('cfgKodeRekening').value = cfg.Kode_Rekening || '';
+
+      // Filter Data Bulanan
+      const bulan = document.getElementById('deskFilterBulan').value;
+      const tahun = document.getElementById('deskFilterTahun').value;
+      const padBulan = String(bulan).padStart(2, '0');
+      const prefix = `${tahun}-${padBulan}`;
+
+      document.getElementById('tablePeriodLabel').textContent = `Periode: Bulan ${bulan}, Tahun ${tahun}`;
+
+      const filtered = records.filter(r => (r.tanggal || '').startsWith(prefix));
+      filtered.sort((a, b) => a.tanggal.localeCompare(b.tanggal));
+
+      // Hitung Metrik
+      let totalKerja = 0;
+      let totalLibur = 0;
+      let totalFotoLengkap = 0;
+
+      filtered.forEach(r => {
+        if (r.is_libur) {
+          totalLibur++;
+        } else {
+          totalKerja++;
+          if (r.foto_0_base64 && r.foto_50_base64 && r.foto_100_base64) {
+            totalFotoLengkap++;
+          }
+        }
+      });
+
+      // Hitung Cuti Tahunan terpakai dalam tahun yang dipilih
+      const yearPrefix = `${tahun}-`;
+      let cutiTahunanUsed = 0;
+      records.forEach(r => {
+        if ((r.tanggal || '').startsWith(yearPrefix) && r.is_libur && /cuti\s*tahunan/i.test(r.jenis_pekerjaan || '')) {
+          cutiTahunanUsed++;
+        }
+      });
+      const cutiTahunanRemaining = Math.max(0, 12 - cutiTahunanUsed);
+
+      document.getElementById('statKerja').textContent = totalKerja;
+      document.getElementById('statFotoLengkap').textContent = totalFotoLengkap;
+      document.getElementById('statLibur').textContent = totalLibur;
+      document.getElementById('statPersen').textContent = totalKerja > 0 ? `${Math.round((totalFotoLengkap / totalKerja) * 100)}%` : '100%';
+
+      const statCutiEl = document.getElementById('statCutiTahunan');
+      const statCutiSubEl = document.getElementById('statCutiSub');
+      if (statCutiEl) statCutiEl.innerHTML = `${cutiTahunanUsed} <span class="text-xs font-semibold text-slate-400">/ 12 Hari</span>`;
+      if (statCutiSubEl) statCutiSubEl.textContent = `Sisa: ${cutiTahunanRemaining} hari`;
+
+      // Update badge di kedua formulir
+      ['mobCutiBadge', 'deskCutiBadge'].forEach(bId => {
+        const badge = document.getElementById(bId);
+        if (badge) {
+          badge.textContent = `Cuti: ${cutiTahunanUsed}/12 Terpakai`;
+          if (cutiTahunanRemaining === 0) {
+            badge.className = 'text-[10px] bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded-full';
+          } else {
+            badge.className = 'text-[10px] bg-cyan-100 text-cyan-800 font-bold px-2 py-0.5 rounded-full';
+          }
+        }
+      });
+
+      // Render Baris Tabel Desktop
+      const tbody = document.getElementById('deskTableBody');
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-slate-400">Belum ada catatan pada periode ini. Klik tombol "Isi Data Demo 1 Bulan" di atas untuk simulasi cepat.</td></tr>`;
+      } else {
+        let h = '';
+        filtered.forEach((r, idx) => {
+          const no = idx + 1;
+          if (r.is_libur) {
+            const taskLabel = (r.jenis_pekerjaan && r.jenis_pekerjaan !== '-') ? r.jenis_pekerjaan : 'Hari Libur / Minggu';
+            let badgeColor = 'bg-amber-100 text-amber-800';
+            let rowBg = 'bg-amber-50/40 hover:bg-amber-50';
+            let badgeText = 'Libur';
+
+            const lowTask = taskLabel.toLowerCase();
+            if (lowTask.includes('cuti')) {
+              badgeColor = 'bg-blue-100 text-blue-800';
+              rowBg = 'bg-blue-50/40 hover:bg-blue-50';
+              badgeText = 'Cuti';
+            } else if (lowTask.includes('sakit')) {
+              badgeColor = 'bg-rose-100 text-rose-800';
+              rowBg = 'bg-rose-50/40 hover:bg-rose-50';
+              badgeText = 'Sakit';
+            } else if (lowTask.includes('izin')) {
+              badgeColor = 'bg-slate-100 text-slate-800';
+              rowBg = 'bg-slate-50/60 hover:bg-slate-100';
+              badgeText = 'Izin';
+            }
+
+            h += `
+              <tr class="${rowBg} transition">
+                <td class="p-3 text-center font-bold text-slate-500">${no}</td>
+                <td class="p-3 font-semibold text-slate-700">${r.tanggal}</td>
+                <td colspan="5" class="p-3 text-center font-bold tracking-widest text-[11px] uppercase">-- ${escapeHtml(taskLabel)} --</td>
+                <td class="p-3 text-center"><span class="${badgeColor} px-2 py-0.5 rounded-full text-[10px] font-bold">${badgeText}</span></td>
+                <td class="p-3 text-center"><button type="button" onclick="deleteRecord('${r.tanggal}')" class="text-red-500 hover:text-red-700 text-xs" title="Hapus">✕</button></td>
+              </tr>
+            `;
+          } else {
+            const safeTgl = escapeHtml(r.tanggal);
+            const img0 = r.foto_0_base64 ? `<button type="button" onclick="openLightbox('${r.foto_0_base64}', '0% - ${safeTgl}')" class="group block mx-auto"><img src="${r.foto_0_base64}" class="w-12 h-10 object-cover rounded border border-slate-200 shadow-sm group-hover:scale-105 transition"/></button>` : '<span class="text-slate-300">-</span>';
+            const img50 = r.foto_50_base64 ? `<button type="button" onclick="openLightbox('${r.foto_50_base64}', '50% - ${safeTgl}')" class="group block mx-auto"><img src="${r.foto_50_base64}" class="w-12 h-10 object-cover rounded border border-slate-200 shadow-sm group-hover:scale-105 transition"/></button>` : '<span class="text-slate-300">-</span>';
+            const img100 = r.foto_100_base64 ? `<button type="button" onclick="openLightbox('${r.foto_100_base64}', '100% - ${safeTgl}')" class="group block mx-auto"><img src="${r.foto_100_base64}" class="w-12 h-10 object-cover rounded border border-slate-200 shadow-sm group-hover:scale-105 transition"/></button>` : '<span class="text-slate-300">-</span>';
+
+            const isLengkap = r.foto_0_base64 && r.foto_50_base64 && r.foto_100_base64;
+            const badge = isLengkap ? '<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full text-[10px] font-bold">Lengkap</span>' : '<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-[10px] font-bold">Sebagian</span>';
+
+            h += `
+              <tr class="hover:bg-slate-50 transition">
+                <td class="p-3 text-center font-semibold text-slate-500">${no}</td>
+                <td class="p-3 font-semibold text-slate-800">${r.tanggal}</td>
+                <td class="p-3 text-slate-700">${escapeHtml(r.lokasi)}</td>
+                <td class="p-3 text-slate-700">${escapeHtml(r.jenis_pekerjaan)}</td>
+                <td class="p-3 text-center">${img0}</td>
+                <td class="p-3 text-center">${img50}</td>
+                <td class="p-3 text-center">${img100}</td>
+                <td class="p-3 text-center">${badge}</td>
+                <td class="p-3 text-center"><button type="button" onclick="deleteRecord('${r.tanggal}')" class="text-red-500 hover:text-red-700 text-xs" title="Hapus">✕</button></td>
+              </tr>
+            `;
+          }
+        });
+        tbody.innerHTML = h;
+      }
+    }
+
+    function deleteRecord(tanggal) {
+      if (!confirm(`Hapus catatan tanggal ${tanggal}?`)) return;
+      const records = getDailyRecords().filter(r => r.tanggal !== tanggal);
+      saveDailyRecords(records);
+      renderAll();
+    }
+
+    function filterTableSearch() {
+      const q = document.getElementById('filterSearch').value.toLowerCase();
+      const rows = document.querySelectorAll('#deskTableBody tr');
+      rows.forEach(r => {
+        r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+      });
+    }
+
+    // Client-side Canvas Image Compression (150px)
+    function processLocalImage(input, prevId, base64Id, sizeId) {
+      const file = input.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const MAX_W = 150;
+          let w = img.width;
+          let h = img.height;
+          if (w > MAX_W) {
+            h = Math.round(h * (MAX_W / w));
+            w = MAX_W;
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, w, h);
+
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          document.getElementById(base64Id).value = dataUrl;
+
+          document.getElementById(prevId).innerHTML = `<img src="${dataUrl}" class="w-full h-full object-cover rounded" />`;
+          const kb = Math.round((dataUrl.length * 0.75) / 1024);
+          document.getElementById(sizeId).textContent = `${kb} KB (${w}x${h})`;
+          document.getElementById(sizeId).className = 'text-[9px] text-emerald-600 font-bold mt-1';
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function handleMobStatusChange(status) {
+      const lok = document.getElementById('mobLokasi');
+      const jns = document.getElementById('mobJenis');
+      const sec = document.getElementById('mobPhotoSection');
+      const ket = document.getElementById('mobKet');
+      const hiddenLibur = document.getElementById('mobIsLibur');
+
+      if (status === 'kerja') {
+        hiddenLibur.value = 'false';
+        lok.disabled = false;
+        if (lok.value === '-') lok.value = '';
+        jns.disabled = false;
+        if (['Hari Libur', 'Cuti Tahunan', 'Cuti Melahirkan', 'Izin Sakit', 'Izin'].includes(jns.value)) {
+          jns.value = '';
+        }
+        ket.value = 'Selesai';
+        sec.classList.remove('opacity-40', 'pointer-events-none');
+      } else {
+        hiddenLibur.value = 'true';
+        lok.value = '-';
+        lok.disabled = true;
+
+        let labelTugas = 'Hari Libur';
+        if (status === 'cuti_tahunan') labelTugas = 'Cuti Tahunan';
+        else if (status === 'cuti_melahirkan') labelTugas = 'Cuti Melahirkan';
+        else if (status === 'sakit') labelTugas = 'Izin Sakit';
+        else if (status === 'izin') labelTugas = 'Izin';
+
+        jns.value = labelTugas;
+        jns.disabled = true;
+        ket.value = labelTugas;
+        sec.classList.add('opacity-40', 'pointer-events-none');
+      }
+    }
+
+    function toggleMobLibur(isLibur) {
+      const sel = document.getElementById('mobStatusKehadiran');
+      if (sel) sel.value = isLibur ? 'libur' : 'kerja';
+      handleMobStatusChange(isLibur ? 'libur' : 'kerja');
+    }
+
+    function toggleMobTask(btn, taskName) {
+      if (document.getElementById('mobStatusKehadiran').value !== 'kerja') return;
+      const input = document.getElementById('mobJenis');
+      let tasks = input.value.split(',').map(s => s.trim()).filter(Boolean);
+      const idx = tasks.indexOf(taskName);
+      if (idx > -1) {
+        tasks.splice(idx, 1);
+        btn.classList.remove('bg-emerald-100', 'text-emerald-800', 'border-emerald-400', 'font-bold');
+        btn.classList.add('bg-slate-100', 'text-slate-600', 'border-slate-200');
+      } else {
+        tasks.push(taskName);
+        btn.classList.add('bg-emerald-100', 'text-emerald-800', 'border-emerald-400', 'font-bold');
+        btn.classList.remove('bg-slate-100', 'text-slate-600', 'border-slate-200');
+      }
+      input.value = tasks.join(', ');
+    }
+
+    function syncMobTaskButtons() {
+      const inputVal = document.getElementById('mobJenis').value;
+      const tasks = inputVal.split(',').map(s => s.trim()).filter(Boolean);
+      document.querySelectorAll('#mobQuickTasksGroup .btn-mob-task').forEach(btn => {
+        const t = btn.getAttribute('data-task');
+        if (tasks.includes(t)) {
+          btn.classList.add('bg-emerald-100', 'text-emerald-800', 'border-emerald-400', 'font-bold');
+          btn.classList.remove('bg-slate-100', 'text-slate-600', 'border-slate-200');
+        } else {
+          btn.classList.remove('bg-emerald-100', 'text-emerald-800', 'border-emerald-400', 'font-bold');
+          btn.classList.add('bg-slate-100', 'text-slate-600', 'border-slate-200');
+        }
+      });
+    }
+
+    function resetMobTaskButtons() {
+      document.querySelectorAll('#mobQuickTasksGroup .btn-mob-task').forEach(btn => {
+        btn.classList.remove('bg-emerald-100', 'text-emerald-800', 'border-emerald-400', 'font-bold');
+        btn.classList.add('bg-slate-100', 'text-slate-600', 'border-slate-200');
+      });
+    }
+
+    // Submit Form Mobile
+    function handleMobileSubmit(e) {
+      e.preventDefault();
+      const statusKehadiran = document.getElementById('mobStatusKehadiran').value;
+      const isLibur = (statusKehadiran !== 'kerja');
+
+      if (!isLibur) {
+        const f0 = document.getElementById('mobBase64_0').value;
+        const f50 = document.getElementById('mobBase64_50').value;
+        const f100 = document.getElementById('mobBase64_100').value;
+        if (!f0 || !f50 || !f100) {
+          alert('Harap unggah ketiga foto dokumentasi (0%, 50%, 100%)');
+          return;
+        }
+      }
+
+      const tgl = document.getElementById('mobTanggal').value;
+      const jnsPekerjaan = document.getElementById('mobJenis').value;
+
+      if (isLibur && /cuti\s*tahunan/i.test(jnsPekerjaan)) {
+        const year = tgl.substring(0, 4);
+        const yearPrefix = `${year}-`;
+        const existingRecords = getDailyRecords();
+        let usedCount = 0;
+        existingRecords.forEach(r => {
+          if (r.tanggal !== tgl && (r.tanggal || '').startsWith(yearPrefix) && r.is_libur && /cuti\s*tahunan/i.test(r.jenis_pekerjaan || '')) {
+            usedCount++;
+          }
+        });
+        if (usedCount >= 12) {
+          alert(`Batas kuota Cuti Tahunan untuk tahun ${year} sudah habis (Maksimal 12 hari, telah terpakai ${usedCount} hari).`);
+          return;
+        }
+      }
+
+      const records = getDailyRecords().filter(r => r.tanggal !== tgl);
+
+      records.push({
+        tanggal: tgl,
+        lokasi: document.getElementById('mobLokasi').value,
+        jenis_pekerjaan: document.getElementById('mobJenis').value,
+        foto_0_base64: document.getElementById('mobBase64_0').value,
+        foto_50_base64: document.getElementById('mobBase64_50').value,
+        foto_100_base64: document.getElementById('mobBase64_100').value,
+        keterangan: document.getElementById('mobKet').value,
+        is_libur: isLibur
+      });
+
+      saveDailyRecords(records);
+      alert(`Catatan tanggal ${tgl} berhasil disimpan ke database lokal!`);
+      
+      document.getElementById('formMobile').reset();
+      document.getElementById('mobBase64_0').value = '';
+      document.getElementById('mobBase64_50').value = '';
+      document.getElementById('mobBase64_100').value = '';
+      document.getElementById('mobPrev0').textContent = 'Pilih Foto';
+      document.getElementById('mobPrev50').textContent = 'Pilih Foto';
+      document.getElementById('mobPrev100').textContent = 'Pilih Foto';
+      const selMob = document.getElementById('mobStatusKehadiran');
+      if (selMob) {
+        selMob.value = 'kerja';
+        handleMobStatusChange('kerja');
+      }
+      resetMobTaskButtons();
+      renderAll();
+    }
+
+    // Kontrol Form Input Desktop Mode
+    function handleDeskStatusChange(status) {
+      const lok = document.getElementById('deskLokasi');
+      const jns = document.getElementById('deskJenis');
+      const sec = document.getElementById('deskPhotoSection');
+      const ket = document.getElementById('deskKet');
+      const hiddenLibur = document.getElementById('deskIsLibur');
+
+      if (status === 'kerja') {
+        hiddenLibur.value = 'false';
+        lok.disabled = false;
+        if (lok.value === '-') lok.value = '';
+        jns.disabled = false;
+        if (['Hari Libur', 'Cuti Tahunan', 'Cuti Melahirkan', 'Izin Sakit', 'Izin'].includes(jns.value)) {
+          jns.value = '';
+        }
+        ket.value = 'Selesai';
+        sec.classList.remove('opacity-40', 'pointer-events-none');
+      } else {
+        hiddenLibur.value = 'true';
+        lok.value = '-';
+        lok.disabled = true;
+
+        let labelTugas = 'Hari Libur';
+        if (status === 'cuti_tahunan') labelTugas = 'Cuti Tahunan';
+        else if (status === 'cuti_melahirkan') labelTugas = 'Cuti Melahirkan';
+        else if (status === 'sakit') labelTugas = 'Izin Sakit';
+        else if (status === 'izin') labelTugas = 'Izin';
+
+        jns.value = labelTugas;
+        jns.disabled = true;
+        ket.value = labelTugas;
+        sec.classList.add('opacity-40', 'pointer-events-none');
+      }
+    }
+
+    function toggleDeskLibur(isLibur) {
+      const sel = document.getElementById('deskStatusKehadiran');
+      if (sel) sel.value = isLibur ? 'libur' : 'kerja';
+      handleDeskStatusChange(isLibur ? 'libur' : 'kerja');
+    }
+
+    function toggleDeskTask(btn, taskName) {
+      if (document.getElementById('deskStatusKehadiran').value !== 'kerja') return;
+      const input = document.getElementById('deskJenis');
+      let tasks = input.value.split(',').map(s => s.trim()).filter(Boolean);
+      const idx = tasks.indexOf(taskName);
+      if (idx > -1) {
+        tasks.splice(idx, 1);
+        btn.classList.remove('bg-emerald-100', 'text-emerald-800', 'border-emerald-400', 'font-bold');
+        btn.classList.add('bg-slate-100', 'text-slate-600', 'border-slate-200');
+      } else {
+        tasks.push(taskName);
+        btn.classList.add('bg-emerald-100', 'text-emerald-800', 'border-emerald-400', 'font-bold');
+        btn.classList.remove('bg-slate-100', 'text-slate-600', 'border-slate-200');
+      }
+      input.value = tasks.join(', ');
+    }
+
+    function syncDeskTaskButtons() {
+      const inputVal = document.getElementById('deskJenis').value;
+      const tasks = inputVal.split(',').map(s => s.trim()).filter(Boolean);
+      document.querySelectorAll('#deskQuickTasksGroup .btn-desk-task').forEach(btn => {
+        const t = btn.getAttribute('data-task');
+        if (tasks.includes(t)) {
+          btn.classList.add('bg-emerald-100', 'text-emerald-800', 'border-emerald-400', 'font-bold');
+          btn.classList.remove('bg-slate-100', 'text-slate-600', 'border-slate-200');
+        } else {
+          btn.classList.remove('bg-emerald-100', 'text-emerald-800', 'border-emerald-400', 'font-bold');
+          btn.classList.add('bg-slate-100', 'text-slate-600', 'border-slate-200');
+        }
+      });
+    }
+
+    function resetDeskTaskButtons() {
+      document.querySelectorAll('#deskQuickTasksGroup .btn-desk-task').forEach(btn => {
+        btn.classList.remove('bg-emerald-100', 'text-emerald-800', 'border-emerald-400', 'font-bold');
+        btn.classList.add('bg-slate-100', 'text-slate-600', 'border-slate-200');
+      });
+    }
+
+    function resetDeskInputForm() {
+      document.getElementById('deskFormInput').reset();
+      document.getElementById('deskBase64_0').value = '';
+      document.getElementById('deskBase64_50').value = '';
+      document.getElementById('deskBase64_100').value = '';
+
+      document.getElementById('deskPrev0').innerHTML = '<span class="text-[11px] text-slate-400">Pilih Foto 0%</span>';
+      document.getElementById('deskPrev50').innerHTML = '<span class="text-[11px] text-slate-400">Pilih Foto 50%</span>';
+      document.getElementById('deskPrev100').innerHTML = '<span class="text-[11px] text-slate-400">Pilih Foto 100%</span>';
+
+      document.getElementById('deskSize_0').textContent = 'Maks 150px';
+      document.getElementById('deskSize_0').className = 'text-[10px] text-slate-400 mt-1';
+      document.getElementById('deskSize_50').textContent = 'Maks 150px';
+      document.getElementById('deskSize_50').className = 'text-[10px] text-slate-400 mt-1';
+      document.getElementById('deskSize_100').textContent = 'Maks 150px';
+      document.getElementById('deskSize_100').className = 'text-[10px] text-slate-400 mt-1';
+      
+      const selDesk = document.getElementById('deskStatusKehadiran');
+      if (selDesk) {
+        selDesk.value = 'kerja';
+        handleDeskStatusChange('kerja');
+      }
+      resetDeskTaskButtons();
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      document.getElementById('deskTanggal').value = todayStr;
+    }
+
+    // Submit Form Input Desktop Mode
+    function handleDesktopSubmit(e) {
+      e.preventDefault();
+      const statusKehadiran = document.getElementById('deskStatusKehadiran').value;
+      const isLibur = (statusKehadiran !== 'kerja');
+
+      if (!isLibur) {
+        const f0 = document.getElementById('deskBase64_0').value;
+        const f50 = document.getElementById('deskBase64_50').value;
+        const f100 = document.getElementById('deskBase64_100').value;
+        if (!f0 || !f50 || !f100) {
+          alert('Harap unggah ketiga foto dokumentasi progres (0%, 50%, dan 100%)');
+          return;
+        }
+      }
+
+      const tgl = document.getElementById('deskTanggal').value;
+      const jnsPekerjaan = document.getElementById('deskJenis').value;
+
+      if (isLibur && /cuti\s*tahunan/i.test(jnsPekerjaan)) {
+        const year = tgl.substring(0, 4);
+        const yearPrefix = `${year}-`;
+        const existingRecords = getDailyRecords();
+        let usedCount = 0;
+        existingRecords.forEach(r => {
+          if (r.tanggal !== tgl && (r.tanggal || '').startsWith(yearPrefix) && r.is_libur && /cuti\s*tahunan/i.test(r.jenis_pekerjaan || '')) {
+            usedCount++;
+          }
+        });
+        if (usedCount >= 12) {
+          alert(`Batas kuota Cuti Tahunan untuk tahun ${year} sudah habis (Maksimal 12 hari, telah terpakai ${usedCount} hari).`);
+          return;
+        }
+      }
+
+      const records = getDailyRecords().filter(r => r.tanggal !== tgl);
+
+      records.push({
+        tanggal: tgl,
+        lokasi: document.getElementById('deskLokasi').value,
+        jenis_pekerjaan: document.getElementById('deskJenis').value,
+        foto_0_base64: document.getElementById('deskBase64_0').value,
+        foto_50_base64: document.getElementById('deskBase64_50').value,
+        foto_100_base64: document.getElementById('deskBase64_100').value,
+        keterangan: document.getElementById('deskKet').value,
+        is_libur: isLibur
+      });
+
+      saveDailyRecords(records);
+      alert(`Catatan tanggal ${tgl} berhasil disimpan ke database lokal!`);
+      
+      resetDeskInputForm();
+      renderAll();
+      switchDeskSubTab('table');
+    }
+
+    // Simpan Pengaturan Kop
+    function handleSaveSettings(e) {
+      e.preventDefault();
+      const cfg = {
+        Judul_Laporan: document.getElementById('cfgJudul').value,
+        Wilayah: document.getElementById('cfgWilayah').value,
+        Kecamatan: document.getElementById('cfgKecamatan').value,
+        Nama_Petugas: document.getElementById('cfgNamaPetugas').value,
+        Nama_Pengawas: document.getElementById('cfgNamaPengawas').value,
+        Urusan: document.getElementById('cfgUrusan').value,
+        Program: document.getElementById('cfgProgram').value,
+        Kegiatan: document.getElementById('cfgKegiatan').value,
+        Sub_Kegiatan: document.getElementById('cfgSubKegiatan').value,
+        Rincian_Sub: document.getElementById('cfgRincianSub').value,
+        Kode_Rekening: document.getElementById('cfgKodeRekening').value
+      };
+      saveConfig(cfg);
+      alert('Pengaturan identitas kedinasan berhasil diperbarui!');
+      renderAll();
+    }
+
+    // Modal Lightbox
+    function openLightbox(url, title) {
+      document.getElementById('lightboxImg').src = url;
+      document.getElementById('lightboxTitle').textContent = title;
+      document.getElementById('modalLightbox').classList.remove('hidden');
+    }
+
+    function closeLightbox() {
+      document.getElementById('modalLightbox').classList.add('hidden');
+    }
+
+    /**
+     * =========================================================================
+     * GENERATOR DEMO DATA 1 BULAN OTOMATIS (MOCK SEEDER)
+     * =========================================================================
+     */
+    function seedOneMonthMockData() {
+      const bulan = document.getElementById('deskFilterBulan').value;
+      const tahun = document.getElementById('deskFilterTahun').value;
+      const padBulan = String(bulan).padStart(2, '0');
+
+      if (!confirm(`Generate data demo lengkap untuk Bulan ${bulan} Tahun ${tahun}? Data lama pada bulan ini akan ditimpa.`)) {
+        return;
+      }
+
+      // Generate dummy placeholder 150px photo blobs
+      const photo0 = createMockPhotoCanvas('0% MULAI', '#0284c7');
+      const photo50 = createMockPhotoCanvas('50% PROSES', '#d97706');
+      const photo100 = createMockPhotoCanvas('100% SELESAI', '#16a34a');
+
+      const sampleLocations = [
+        'Jalur Hijau By Pass DI Panjaitan',
+        'Taman LRT Kayu Putih',
+        'Taman Gabus Pulogadung',
+        'Jalur Hijau Pemuda Rawamangun',
+        'Taman Pembibitan Rawamangun',
+        'Jalur Hijau Perintis Kemerdekaan'
+      ];
+
+      const sampleTasks = [
+        'Penyiraman Tanaman Jalur Hijau',
+        'Penyiraman Pohon & Perapihan Daun',
+        'Pemangkasan Rumput & Ranting Pohon',
+        'Menanam Tanaman Pelindung & Hias',
+        'Penyiraman Pohon Pelindung'
+      ];
+
+      const daysInMonth = new Date(tahun, bulan, 0).getDate();
+      const records = getDailyRecords().filter(r => !(r.tanggal || '').startsWith(`${tahun}-${padBulan}`));
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const padDay = String(day).padStart(2, '0');
+        const tglStr = `${tahun}-${padBulan}-${padDay}`;
+        const dt = new Date(tahun, parseInt(bulan, 10) - 1, day);
+        const isSunday = dt.getDay() === 0;
+
+        if (isSunday) {
+          records.push({
+            tanggal: tglStr,
+            lokasi: '-',
+            jenis_pekerjaan: 'Hari Libur',
+            foto_0_base64: '',
+            foto_50_base64: '',
+            foto_100_base64: '',
+            keterangan: 'Libur',
+            is_libur: true
+          });
+        } else {
+          const loc = sampleLocations[(day - 1) % sampleLocations.length];
+          const tsk = sampleTasks[(day - 1) % sampleTasks.length];
+
+          records.push({
+            tanggal: tglStr,
+            lokasi: loc,
+            jenis_pekerjaan: tsk,
+            foto_0_base64: photo0,
+            foto_50_base64: photo50,
+            foto_100_base64: photo100,
+            keterangan: 'Selesai',
+            is_libur: false
+          });
+        }
+      }
+
+      saveDailyRecords(records);
+      alert(`Berhasil generate data demo untuk ${daysInMonth} hari pada ${tahun}-${padBulan}!`);
+      renderAll();
+    }
+
+    // Helper membuat canvas image 150px simulasi
+    function createMockPhotoCanvas(label, color) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 150;
+      canvas.height = 112; // rasio 4:3 proporsional
+      const ctx = canvas.getContext('2d');
+
+      // Background
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, 150, 112);
+
+      // Border & Grid motif
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(4, 4, 142, 104);
+
+      // Text Label
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, 75, 50);
+
+      ctx.font = '9px sans-serif';
+      ctx.fillText('Dokumentasi PJLP', 75, 70);
+
+      return canvas.toDataURL('image/jpeg', 0.8);
+    }
+
+    // Export & Import JSON
+    function exportJsonDump() {
+      const dump = {
+        exportedAt: new Date().toISOString(),
+        config: getConfig(),
+        records: getDailyRecords()
+      };
+      const blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pjlp_dump_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importJsonDump(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (data.config) saveConfig(data.config);
+          if (data.records) saveDailyRecords(data.records);
+          alert('Data dump JSON berhasil diimpor!');
+          renderAll();
+        } catch (err) {
+          alert('Format berkas JSON tidak valid: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      input.value = '';
+    }
+
+    function resetLocalDatabase() {
+      if (confirm('Apakah Anda yakin ingin mengosongkan seluruh database lokal?')) {
+        localStorage.removeItem(STORAGE_KEY_DATA);
+        localStorage.removeItem(STORAGE_KEY_CONFIG);
+        initDatabase();
+        alert('Database lokal berhasil direset.');
+        renderAll();
+      }
+    }
+
+    // ==========================================
+    // EKSPOR KE EXCEL (.XLSX) - STANDALONE DUMP
+    // ==========================================
+    function exportDumpToExcel() {
+      const records = getDailyRecords();
+      const bulan = document.getElementById('deskFilterBulan').value;
+      const tahun = document.getElementById('deskFilterTahun').value;
+      const padBulan = String(bulan).padStart(2, '0');
+      const filtered = records.filter(r => (r.tanggal || '').startsWith(`${tahun}-${padBulan}`));
+
+      if (filtered.length === 0) {
+        alert('Tidak ada data laporan untuk diekspor pada periode ini.');
+        return;
+      }
+
+      const cfg = getConfig();
+      const rows = [];
+      rows.push(['BUKU HARIAN LAPANGAN PJLP']);
+      rows.push(['Kecamatan', cfg.Kecamatan || 'Pulogadung']);
+      rows.push(['Nama Petugas', cfg.Nama_Petugas || 'Billah Aktafi']);
+      rows.push(['Periode', `Bulan ${bulan} - Tahun ${tahun}`]);
+      rows.push([]);
+
+      filtered.sort((a, b) => (a.tanggal || '').localeCompare(b.tanggal || '')).forEach((r, idx) => {
+        const taskLabel = (r.jenis_pekerjaan && r.jenis_pekerjaan !== '-') ? r.jenis_pekerjaan : 'Hari Libur / Minggu';
+        const ketLabel = r.keterangan || (r.is_libur ? taskLabel : 'Selesai');
+        rows.push([
+          idx + 1,
+          r.tanggal,
+          r.is_libur ? '-' : (r.lokasi || '-'),
+          r.is_libur ? taskLabel : (r.jenis_pekerjaan || '-'),
+          r.foto_0_base64 ? '(Tersimpan)' : '-',
+          r.foto_50_base64 ? '(Tersimpan)' : '-',
+          r.foto_100_base64 ? '(Tersimpan)' : '-',
+          ketLabel,
+          r.is_libur ? taskLabel : 'Kerja'
+        ]);
+      });
+
+      try {
+        if (typeof XLSX !== 'undefined') {
+          const ws = XLSX.utils.aoa_to_sheet(rows);
+          ws['!cols'] = [{ wch: 6 }, { wch: 14 }, { wch: 28 }, { wch: 32 }, { wch: 18 }, { wch: 12 }];
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, `Laporan_${bulan}_${tahun}`);
+          XLSX.writeFile(wb, `Laporan_Harian_PJLP_${(cfg.Nama_Petugas || 'PJLP').replace(/\s+/g, '_')}_${tahun}_${bulan}.xlsx`);
+        } else {
+          // Fallback ke CSV jika CDN XLSX diblokir (dengan proteksi CSV Formula Injection)
+          let csvContent = 'data:text/csv;charset=utf-8,\uFEFF';
+          rows.forEach(r => {
+            const line = r.map(c => {
+              let s = String(c ?? '');
+              if (/^[=+\-@\t\r]/.test(s)) {
+                s = "'" + s;
+              }
+              return `"${s.replace(/"/g, '""')}"`;
+            }).join(',');
+            csvContent += line + '\r\n';
+          });
+          const encodedUri = encodeURI(csvContent);
+          const link = document.createElement('a');
+          link.setAttribute('href', encodedUri);
+          link.setAttribute('download', `Laporan_Harian_PJLP_${tahun}_${bulan}.csv`);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      } catch (e) {
+        alert('Gagal ekspor Excel: ' + e.message);
+      }
+    }
+
+    // ==========================================
+    // EKSPOR KE WORD (.DOC) - STANDALONE DUMP
+    // ==========================================
+    function exportDumpToWord() {
+      const records = getDailyRecords();
+      const bulan = document.getElementById('deskFilterBulan').value;
+      const tahun = document.getElementById('deskFilterTahun').value;
+      const padBulan = String(bulan).padStart(2, '0');
+      const filtered = records.filter(r => (r.tanggal || '').startsWith(`${tahun}-${padBulan}`));
+
+      if (filtered.length === 0) {
+        alert('Tidak ada data laporan untuk diekspor pada periode ini.');
+        return;
+      }
+
+      const cfg = getConfig();
+      const judul = cfg.Judul_Laporan || 'BUKU HARIAN LAPANGAN PJLP';
+      const wilayah = cfg.Wilayah || 'Suku Dinas Pertamanan dan Hutan Kota';
+      const kecamatan = cfg.Kecamatan || '-';
+      const namaPetugas = cfg.Nama_Petugas || 'Billah Aktafi';
+      const program = cfg.Program || '-';
+      const urusan = cfg.Urusan || '-';
+      const subKeg = cfg.Sub_Kegiatan || '-';
+      const rekening = cfg.Kode_Rekening || '-';
+
+      let tableRowsHtml = '';
+      filtered.sort((a, b) => (a.tanggal || '').localeCompare(b.tanggal || '')).forEach((r, idx) => {
+        const no = idx + 1;
+        if (r.is_libur) {
+          const taskLabel = (r.jenis_pekerjaan && r.jenis_pekerjaan !== '-') ? r.jenis_pekerjaan : 'Hari Libur / Minggu';
+          tableRowsHtml += `
+            <tr style="background-color:#fef3c7;">
+              <td style="border:1px solid #94a3b8; padding:6px; text-align:center;">${no}</td>
+              <td style="border:1px solid #94a3b8; padding:6px; text-align:center;">${escapeHtml(r.tanggal || '-')}</td>
+              <td colspan="2" style="border:1px solid #94a3b8; padding:6px; text-align:center; font-weight:bold; color:#92400e;">-- ${escapeHtml(taskLabel.toUpperCase())} --</td>
+              <td style="border:1px solid #94a3b8; padding:6px; text-align:center;">${escapeHtml(r.keterangan || taskLabel)}</td>
+            </tr>
+          `;
+        } else {
+          tableRowsHtml += `
+            <tr>
+              <td style="border:1px solid #94a3b8; padding:6px; text-align:center;">${no}</td>
+              <td style="border:1px solid #94a3b8; padding:6px; text-align:center;">${escapeHtml(r.tanggal || '-')}</td>
+              <td style="border:1px solid #94a3b8; padding:6px;">${escapeHtml(r.lokasi || '-')}</td>
+              <td style="border:1px solid #94a3b8; padding:6px;">${escapeHtml(r.jenis_pekerjaan || '-')}</td>
+              <td style="border:1px solid #94a3b8; padding:6px; text-align:center;">${escapeHtml(r.keterangan || 'Selesai')}</td>
+            </tr>
+          `;
+        }
+      });
+
+      const wordHtml = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <meta charset="utf-8">
+          <title>${escapeHtml(judul)}</title>
+          <style>
+            body { font-family: 'Calibri', Arial, sans-serif; font-size: 10pt; color: #1e293b; margin: 20px; }
+            h2, h3 { text-align: center; margin: 2px; text-transform: uppercase; }
+            .header-meta { margin-top: 15px; margin-bottom: 15px; width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+            .header-meta td { padding: 3px 6px; }
+            table.data-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 9pt; }
+            table.data-table th { background-color: #f1f5f9; border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold; }
+            .ttd-table { width: 100%; margin-top: 30px; border-collapse: collapse; page-break-inside: avoid; }
+            .ttd-table td { width: 50%; text-align: center; vertical-align: top; }
+          </style>
+        </head>
+        <body>
+          <h2>${escapeHtml(judul)}</h2>
+          <h3>${escapeHtml(wilayah)}</h3>
+          <p style="text-align:center; font-size:9pt; margin-top:2px;">Kecamatan: ${escapeHtml(kecamatan)} | Periode: Bulan ${escapeHtml(bulan)} Tahun ${escapeHtml(tahun)}</p>
+          <hr style="border:0; border-top:2px solid #000; margin:10px 0;"/>
+
+          <table class="header-meta">
+            <tr>
+              <td style="width:18%;"><b>Nama Petugas</b></td><td style="width:32%;">: ${escapeHtml(namaPetugas)}</td>
+              <td style="width:18%;"><b>Program</b></td><td style="width:32%;">: ${escapeHtml(program)}</td>
+            </tr>
+            <tr>
+              <td><b>Urusan</b></td><td>: ${escapeHtml(urusan)}</td>
+              <td><b>Sub Kegiatan</b></td><td>: ${escapeHtml(subKeg)}</td>
+            </tr>
+            <tr>
+              <td><b>Kode Rekening</b></td><td colspan="3">: ${escapeHtml(rekening)}</td>
+          </table>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width:6%;">No</th>
+                <th style="width:16%;">Tanggal</th>
+                <th style="width:34%;">Lokasi Kerja</th>
+                <th style="width:30%;">Jenis Pekerjaan</th>
+                <th style="width:14%;">Keterangan</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRowsHtml}
+            </tbody>
+          </table>
+
+          <table class="ttd-table">
+            <tr>
+              <td>
+                Mengetahui,<br/>
+                <b>Pengawas Lapangan</b><br/><br/><br/><br/>
+                ${formatSignaturePengawasHtml(cfg.Nama_Pengawas)}
+              </td>
+              <td>
+                Jakarta, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
+                <b>Petugas PJLP Lapangan</b><br/><br/><br/><br/>
+                <u><b>${escapeHtml(cfg.Nama_Petugas || 'Petugas')}</b></u><br/>
+                PJLP Kecamatan ${escapeHtml(cfg.Kecamatan || '-')}
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `;
+
+      try {
+        const blob = new Blob(['\ufeff', wordHtml], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Laporan_Harian_PJLP_${(cfg.Nama_Petugas || 'PJLP').replace(/\s+/g, '_')}_${tahun}_${bulan}.doc`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        alert('Gagal ekspor Word: ' + e.message);
+      }
+    }
+
+    /**
+     * =========================================================================
+     * PRINT / PDF EXPORTER A4 LANDSCAPE LANGSUNG DI BROWSER
+     * =========================================================================
+     */
+    function triggerBrowserPrint() {
+      const cfg = getConfig();
+      const records = getDailyRecords();
+      const bulan = document.getElementById('deskFilterBulan').value;
+      const tahun = document.getElementById('deskFilterTahun').value;
+      const padBulan = String(bulan).padStart(2, '0');
+
+      const bulanNames = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      ];
+      const namaBulanStr = bulanNames[parseInt(padBulan, 10) - 1] || padBulan;
+
+      // Populate Print Header
+      document.getElementById('printJudulLaporan').textContent = cfg.Judul_Laporan || 'BUKU HARIAN LAPANGAN PJLP';
+      document.getElementById('printWilayah').textContent = cfg.Wilayah || '-';
+      document.getElementById('printKecamatan').textContent = cfg.Kecamatan || '-';
+      document.getElementById('printPetugas').textContent = cfg.Nama_Petugas || '-';
+      document.getElementById('printUrusan').textContent = cfg.Urusan || '-';
+      document.getElementById('printProgram').textContent = cfg.Program || '-';
+      document.getElementById('printKegiatan').textContent = `${cfg.Kegiatan || '-'} / ${cfg.Sub_Kegiatan || '-'}`;
+      document.getElementById('printRekening').textContent = `${cfg.Rincian_Sub || '-'} (${cfg.Kode_Rekening || '-'})`;
+      document.getElementById('printBulanTahun').textContent = `${namaBulanStr.toUpperCase()} ${tahun}`;
+
+      // Tanggal Tanda Tangan
+      const lastDay = new Date(tahun, bulan, 0).getDate();
+      document.getElementById('printTanggalTtd').textContent = `${lastDay} ${namaBulanStr} ${tahun}`;
+      document.getElementById('printSignPengawasContainer').innerHTML = formatSignaturePengawasHtml(cfg.Nama_Pengawas);
+      document.getElementById('printSignPetugas').innerHTML = `<u>${escapeHtml(cfg.Nama_Petugas || 'BILLAH AKTAFI')}</u>`;
+
+      // Filter Data Bulanan
+      const filtered = records.filter(r => (r.tanggal || '').startsWith(`${tahun}-${padBulan}`));
+      filtered.sort((a, b) => a.tanggal.localeCompare(b.tanggal));
+
+      const printTbody = document.getElementById('printTableBody');
+      if (filtered.length === 0) {
+        printTbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 15px; border: 1px solid #64748b;">Tidak ada data laporan untuk periode ${namaBulanStr} ${tahun}.</td></tr>`;
+      } else {
+        let h = '';
+        filtered.forEach((r, idx) => {
+          const no = idx + 1;
+          const tglFormatted = formatTglIndo(r.tanggal);
+
+          if (r.is_libur) {
+            const taskLabel = (r.jenis_pekerjaan && r.jenis_pekerjaan !== '-') ? r.jenis_pekerjaan : 'Hari Libur / Minggu';
+            h += `
+              <tr style="background-color: #f8fafc;">
+                <td style="border: 1px solid #64748b; text-align: center; padding: 4px;">${no}</td>
+                <td style="border: 1px solid #64748b; text-align: center; white-space: nowrap; padding: 4px;">${tglFormatted}</td>
+                <td colspan="5" style="border: 1px solid #64748b; text-align: center; font-weight: bold; color: #64748b; letter-spacing: 2px; padding: 4px;">-- ${escapeHtml(taskLabel.toUpperCase())} --</td>
+                <td style="border: 1px solid #64748b; text-align: center; padding: 4px;">${escapeHtml(r.keterangan || taskLabel)}</td>
+              </tr>
+            `;
+          } else {
+            const img0 = r.foto_0_base64 ? `<img src="${r.foto_0_base64}" style="max-width: 125px; max-height: 90px; object-fit: cover; border-radius: 2px; border: 1px solid #cbd5e1; display: block; margin: auto;" />` : '<span style="color:#94a3b8; font-size: 10px;">-</span>';
+            const img50 = r.foto_50_base64 ? `<img src="${r.foto_50_base64}" style="max-width: 125px; max-height: 90px; object-fit: cover; border-radius: 2px; border: 1px solid #cbd5e1; display: block; margin: auto;" />` : '<span style="color:#94a3b8; font-size: 10px;">-</span>';
+            const img100 = r.foto_100_base64 ? `<img src="${r.foto_100_base64}" style="max-width: 125px; max-height: 90px; object-fit: cover; border-radius: 2px; border: 1px solid #cbd5e1; display: block; margin: auto;" />` : '<span style="color:#94a3b8; font-size: 10px;">-</span>';
+
+            h += `
+              <tr>
+                <td style="border: 1px solid #64748b; text-align: center; vertical-align: middle; padding: 4px;">${no}</td>
+                <td style="border: 1px solid #64748b; text-align: center; vertical-align: middle; white-space: nowrap; padding: 4px;">${tglFormatted}</td>
+                <td style="border: 1px solid #64748b; vertical-align: middle; padding: 4px;">${escapeHtml(r.lokasi)}</td>
+                <td style="border: 1px solid #64748b; vertical-align: middle; padding: 4px;">${escapeHtml(r.jenis_pekerjaan)}</td>
+                <td style="border: 1px solid #64748b; text-align: center; vertical-align: middle; padding: 3px;">${img0}</td>
+                <td style="border: 1px solid #64748b; text-align: center; vertical-align: middle; padding: 3px;">${img50}</td>
+                <td style="border: 1px solid #64748b; text-align: center; vertical-align: middle; padding: 3px;">${img100}</td>
+                <td style="border: 1px solid #64748b; text-align: center; vertical-align: middle; padding: 4px;">${escapeHtml(r.keterangan || 'Selesai')}</td>
+              </tr>
+            `;
+          }
+        });
+        printTbody.innerHTML = h;
+      }
+
+      // Jalankan window.print()
+      setTimeout(() => {
+        window.print();
+      }, 300);
+    }
+
+    function formatTglIndo(dateStr) {
+      if (!dateStr) return '-';
+      const hariNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const bulanNames = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      ];
+      const p = dateStr.split('-');
+      if (p.length === 3) {
+        const y = parseInt(p[0], 10);
+        const m = parseInt(p[1], 10) - 1;
+        const d = parseInt(p[2], 10);
+        const dt = new Date(y, m, d);
+        return `${hariNames[dt.getDay()]}, ${d} ${bulanNames[m]} ${y}`;
+      }
+      return dateStr;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function formatSignaturePengawasHtml(rawPengawas) {
+      if (!rawPengawas || !rawPengawas.trim()) {
+        return '<strong>( .................................................... )</strong><br><span>NIP. ...................................................</span>';
+      }
+
+      const clean = rawPengawas.trim();
+
+      if (clean.includes('/') || clean.includes('\n')) {
+        const parts = clean.split(/[\/\n]+/).map(p => p.trim()).filter(Boolean);
+        let nama = '';
+        let nip = '';
+
+        parts.forEach(p => {
+          if (/^nip/i.test(p) || /^\d{10,}/.test(p)) {
+            nip = p.replace(/^nip\.?\s*/i, '');
+          } else {
+            nama = p;
+          }
+        });
+
+        if (nama && nip) {
+          return `<u><b>${escapeHtml(nama)}</b></u><br><span>NIP. ${escapeHtml(nip)}</span>`;
+        }
+      }
+
+      const nipMatch = clean.match(/^(.*?)(?:[\s,–-]+)?(?:NIP\.?)\s*[:.]?\s*(\d+.*)$/i);
+      if (nipMatch) {
+        const nama = nipMatch[1].trim();
+        const nip = nipMatch[2].trim();
+        return `<u><b>${escapeHtml(nama)}</b></u><br><span>NIP. ${escapeHtml(nip)}</span>`;
+      }
+
+      return `<u><b>${escapeHtml(clean)}</b></u><br><span>NIP. ...................................................</span>`;
+    }
+  </script>
+</body>
+</html>
